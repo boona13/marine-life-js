@@ -349,6 +349,34 @@
         <input type="range" id="count" min="1" max="24" step="1" value="1" />
       </div>
 
+      <h2>Foam / wake</h2>
+      <div class="toggle-row"><label><input type="checkbox" id="ripples" checked /> Foam enabled <span style="opacity:.5">(master toggle)</span></label></div>
+      <div class="row">
+        <label>Foam amount <span style="opacity:.5">(burst + trickle density)</span></label>
+        <span class="val" id="v-foamAmount">1.00</span>
+        <input type="range" id="foamAmount" min="0" max="3" step="0.05" value="1" />
+      </div>
+      <div class="row">
+        <label>Droplet size</label>
+        <span class="val" id="v-foamSize">1.00</span>
+        <input type="range" id="foamSize" min="0.3" max="3" step="0.05" value="1" />
+      </div>
+      <div class="row">
+        <label>Foam lifetime <span style="opacity:.5">(how long bubbles linger)</span></label>
+        <span class="val" id="v-foamLife">1.00</span>
+        <input type="range" id="foamLife" min="0.3" max="3" step="0.05" value="1" />
+      </div>
+      <div class="row">
+        <label>Spray distance <span style="opacity:.5">(initial velocity)</span></label>
+        <span class="val" id="v-foamSpread">1.00</span>
+        <input type="range" id="foamSpread" min="0.2" max="2.5" step="0.05" value="1" />
+      </div>
+      <div class="row">
+        <label>Brightness</label>
+        <span class="val" id="v-foamBright">1.00</span>
+        <input type="range" id="foamBright" min="0" max="2" step="0.05" value="1" />
+      </div>
+
       <h2>Scene</h2>
       <div class="row" style="grid-template-columns: 1fr;">
         <label>Motion mode</label>
@@ -360,7 +388,6 @@
         </select>
       </div>
       <div class="toggle-row"><label><input type="checkbox" id="trails" /> Motion trail</label></div>
-      <div class="toggle-row"><label><input type="checkbox" id="ripples" checked /> Tail foam</label></div>
       <div class="toggle-row"><label><input type="checkbox" id="caustics" checked /> Water caustics</label></div>
       <div class="toggle-row"><label><input type="checkbox" id="debug" /> Debug slice lines</label></div>
       <div class="toggle-row"><label><input type="checkbox" id="pixelate" /> Pixelated (no smoothing)</label></div>
@@ -423,6 +450,13 @@
         mode: "wander",
         trails: false,
         ripples: true,
+        // Foam / wake — multipliers on the burst + trickle particle systems.
+        // Defaults of 1.0 reproduce the original look exactly.
+        foamAmount: 1.0,   // particle count multiplier (0 = nothing emitted)
+        foamSize:   1.0,   // droplet radius multiplier
+        foamLife:   1.0,   // particle ttl multiplier (linger time)
+        foamSpread: 1.0,   // initial velocity multiplier (spray distance)
+        foamBright: 1.0,   // alpha multiplier (visibility)
         caustics: true,
         debug: false,
         pixelate: false,
@@ -592,6 +626,11 @@
         size: bindRange("size", "size", true),
         shadow: bindRange("shadow", "shadow"),
         count: bindRange("count", "count", true),
+        foamAmount: bindRange("foamAmount", "foamAmount"),
+        foamSize:   bindRange("foamSize",   "foamSize"),
+        foamLife:   bindRange("foamLife",   "foamLife"),
+        foamSpread: bindRange("foamSpread", "foamSpread"),
+        foamBright: bindRange("foamBright", "foamBright"),
       };
       bindCheckbox("trails", "trails");
       bindCheckbox("ripples", "ripples");
@@ -779,7 +818,16 @@
 
       // Burst on each tail flick: a cluster of foam droplets sprayed
       // backward and to the side the tail just left.
+      // All five P.foam* multipliers default to 1.0, so the original look
+      // is preserved when no sliders have been touched.
       function emitFoamBurst(x, y, heading, tailSide, strength) {
+        const amt = P.foamAmount;
+        if (amt <= 0) return;
+        const sizeK   = P.foamSize;
+        const lifeK   = P.foamLife;
+        const spreadK = P.foamSpread;
+        const brightK = P.foamBright;
+
         const backX = -Math.cos(heading);
         const backY = -Math.sin(heading);
         // Perpendicular "side" vector (rotate back vector by -90°)
@@ -787,42 +835,42 @@
         const sideY =  backX * tailSide;
 
         // Big-droplet core: the visible kick spray
-        const N = Math.round(10 + strength * 8);
+        const N = Math.round((10 + strength * 8) * amt);
         for (let i = 0; i < N; i++) {
           const sBack = 0.5 + Math.random() * 0.9;
           const sSide = 0.35 + Math.random() * 0.7;
-          const speed = 18 + Math.random() * 36 * strength;
-          const vx = (backX * sBack + sideX * sSide) * speed + (Math.random() - 0.5) * 14;
-          const vy = (backY * sBack + sideY * sSide) * speed + (Math.random() - 0.5) * 14;
+          const speed = (18 + Math.random() * 36 * strength) * spreadK;
+          const vx = (backX * sBack + sideX * sSide) * speed + (Math.random() - 0.5) * 14 * spreadK;
+          const vy = (backY * sBack + sideY * sSide) * speed + (Math.random() - 0.5) * 14 * spreadK;
           const ox = (Math.random() - 0.5) * 8;
           const oy = (Math.random() - 0.5) * 8;
-          const r0 = 1.6 + Math.random() * 3.4;
+          const r0 = (1.6 + Math.random() * 3.4) * sizeK;
           particles.push({
             kind: "foam",
             x: x + ox, y: y + oy,
             vx, vy,
             r0, r1: r0 * (1.6 + Math.random() * 0.8),
             life: 0,
-            ttl: 0.5 + Math.random() * 0.9,
-            alphaMul: 0.55 + Math.random() * 0.45,
+            ttl: (0.5 + Math.random() * 0.9) * lifeK,
+            alphaMul: (0.55 + Math.random() * 0.45) * brightK,
           });
         }
         // Fine spray: smaller longer-lived specks
-        const M = Math.round(6 + strength * 6);
+        const M = Math.round((6 + strength * 6) * amt);
         for (let i = 0; i < M; i++) {
-          const vx = backX * (6 + Math.random() * 14) + (Math.random() - 0.5) * 8;
-          const vy = backY * (6 + Math.random() * 14) + (Math.random() - 0.5) * 8;
+          const vx = (backX * (6 + Math.random() * 14) + (Math.random() - 0.5) * 8) * spreadK;
+          const vy = (backY * (6 + Math.random() * 14) + (Math.random() - 0.5) * 8) * spreadK;
           const ox = (Math.random() - 0.5) * 10;
           const oy = (Math.random() - 0.5) * 10;
-          const r0 = 0.6 + Math.random() * 1.1;
+          const r0 = (0.6 + Math.random() * 1.1) * sizeK;
           particles.push({
             kind: "foam",
             x: x + ox, y: y + oy,
             vx, vy,
             r0, r1: r0 * (1.1 + Math.random() * 0.5),
             life: 0,
-            ttl: 1.2 + Math.random() * 1.4,
-            alphaMul: 0.6 + Math.random() * 0.35,
+            ttl: (1.2 + Math.random() * 1.4) * lifeK,
+            alphaMul: (0.6 + Math.random() * 0.35) * brightK,
           });
         }
       }
@@ -830,20 +878,26 @@
       // Continuous wake trickle: a steady stream of tiny bubbles dripped
       // behind the fish each frame. Keeps the wake visible between beats.
       function emitWakeBubble(x, y, heading) {
+        if (P.foamAmount <= 0) return;
+        const sizeK   = P.foamSize;
+        const lifeK   = P.foamLife;
+        const spreadK = P.foamSpread;
+        const brightK = P.foamBright;
+
         const backX = -Math.cos(heading);
         const backY = -Math.sin(heading);
         const ox = (Math.random() - 0.5) * 5;
         const oy = (Math.random() - 0.5) * 5;
-        const r0 = 0.7 + Math.random() * 1.6;
+        const r0 = (0.7 + Math.random() * 1.6) * sizeK;
         particles.push({
           kind: "foam",
           x: x + ox, y: y + oy,
-          vx: backX * (4 + Math.random() * 6) + (Math.random() - 0.5) * 4,
-          vy: backY * (4 + Math.random() * 6) + (Math.random() - 0.5) * 4,
+          vx: (backX * (4 + Math.random() * 6) + (Math.random() - 0.5) * 4) * spreadK,
+          vy: (backY * (4 + Math.random() * 6) + (Math.random() - 0.5) * 4) * spreadK,
           r0, r1: r0 * (1.05 + Math.random() * 0.4),
           life: 0,
-          ttl: 1.6 + Math.random() * 1.4,
-          alphaMul: 0.35 + Math.random() * 0.35,
+          ttl: (1.6 + Math.random() * 1.4) * lifeK,
+          alphaMul: (0.35 + Math.random() * 0.35) * brightK,
         });
       }
 
@@ -986,8 +1040,10 @@
           }
           f.prevSinP = sinP;
 
-          // Continuous trickle — rate proportional to forward speed
-          f.wakeAcc = (f.wakeAcc || 0) + dt * (4 + P.speed * 0.10);
+          // Continuous trickle — rate proportional to forward speed,
+          // scaled by the foam-amount slider so the wake density tracks
+          // the burst density.
+          f.wakeAcc = (f.wakeAcc || 0) + dt * (4 + P.speed * 0.10) * P.foamAmount;
           while (f.wakeAcc >= 1) {
             f.wakeAcc -= 1;
             emitWakeBubble(tx, ty, f.heading);
