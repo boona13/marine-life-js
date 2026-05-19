@@ -1,0 +1,1239 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Marine Life · JS Playground</title>
+    <style>
+      :root {
+        --bg-0: #04111e;
+        --bg-1: #0b2542;
+        --bg-2: #0f4470;
+        --panel: rgba(8, 22, 38, 0.78);
+        --panel-edge: rgba(120, 200, 255, 0.18);
+        --ink: #e6f3ff;
+        --ink-dim: #9bb6cc;
+        --accent: #58c4ff;
+        --accent-warm: #ffb86b;
+        --danger: #ff7a8a;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        font-family: 'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
+        color: var(--ink);
+        background: radial-gradient(ellipse at 50% 30%, var(--bg-2) 0%, var(--bg-1) 50%, var(--bg-0) 100%);
+      }
+      #stage {
+        position: fixed; inset: 0;
+        display: block;
+        cursor: crosshair;
+      }
+      .topbar {
+        position: fixed;
+        top: 14px;
+        left: 14px;
+        right: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        pointer-events: none;
+        z-index: 10;
+      }
+      .topbar h1 {
+        font-size: 15px;
+        margin: 0;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        background: rgba(8, 22, 38, 0.55);
+        backdrop-filter: blur(8px);
+        padding: 8px 14px;
+        border: 1px solid var(--panel-edge);
+        border-radius: 999px;
+        pointer-events: auto;
+      }
+      .topbar h1 .tag {
+        color: var(--accent);
+        font-weight: 600;
+        font-size: 11px;
+        margin-left: 6px;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+      }
+      .topbar a.back {
+        color: var(--ink);
+        text-decoration: none;
+        background: rgba(8, 22, 38, 0.55);
+        backdrop-filter: blur(8px);
+        padding: 8px 14px;
+        border: 1px solid var(--panel-edge);
+        border-radius: 999px;
+        font-size: 12px;
+        pointer-events: auto;
+        transition: background 0.15s ease, border-color 0.15s ease;
+      }
+      .topbar a.back:hover {
+        background: rgba(88, 196, 255, 0.18);
+        border-color: rgba(88, 196, 255, 0.55);
+      }
+      .panel {
+        position: fixed;
+        top: 60px;
+        right: 14px;
+        bottom: 14px;
+        width: 320px;
+        background: var(--panel);
+        backdrop-filter: blur(14px);
+        border: 1px solid var(--panel-edge);
+        border-radius: 16px;
+        padding: 14px 14px 12px;
+        overflow-y: auto;
+        z-index: 5;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+        scrollbar-width: thin;
+        scrollbar-color: rgba(88, 196, 255, 0.4) transparent;
+      }
+      .panel::-webkit-scrollbar { width: 8px; }
+      .panel::-webkit-scrollbar-thumb { background: rgba(88, 196, 255, 0.3); border-radius: 8px; }
+
+      .panel h2 {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.4px;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 12px 0 6px;
+        padding-bottom: 4px;
+        border-bottom: 1px dashed rgba(120, 200, 255, 0.18);
+      }
+      .panel h2:first-child { margin-top: 0; }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 56px;
+        align-items: center;
+        gap: 10px;
+        margin: 8px 0;
+      }
+      .row label {
+        font-size: 12px;
+        color: var(--ink-dim);
+        line-height: 1.2;
+      }
+      .row .val {
+        font-variant-numeric: tabular-nums;
+        font-size: 11px;
+        color: var(--ink);
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 6px;
+        padding: 3px 6px;
+        text-align: right;
+      }
+      .row input[type="range"] {
+        grid-column: 1 / 3;
+        width: 100%;
+        accent-color: var(--accent);
+        height: 4px;
+      }
+
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 7px 0;
+        font-size: 12px;
+        color: var(--ink);
+      }
+      .toggle-row input { accent-color: var(--accent); }
+
+      .btn-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        margin: 10px 0 4px;
+      }
+      .btn {
+        appearance: none;
+        background: rgba(255,255,255,0.06);
+        color: var(--ink);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+      }
+      .btn:hover { background: rgba(88, 196, 255, 0.18); border-color: rgba(88, 196, 255, 0.55); }
+      .btn:active { transform: translateY(1px); }
+      .btn.warm { color: var(--accent-warm); border-color: rgba(255, 184, 107, 0.4); }
+      .btn.warm:hover { background: rgba(255, 184, 107, 0.16); border-color: rgba(255, 184, 107, 0.8); }
+
+      .preset-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+
+      select {
+        appearance: none;
+        background: rgba(255,255,255,0.06);
+        color: var(--ink);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        width: 100%;
+      }
+
+      .stat {
+        font-size: 11px;
+        color: var(--ink-dim);
+        text-align: center;
+        margin-top: 8px;
+        font-variant-numeric: tabular-nums;
+      }
+      .note {
+        font-size: 11px;
+        color: var(--ink-dim);
+        background: rgba(88, 196, 255, 0.06);
+        border-left: 2px solid rgba(88, 196, 255, 0.5);
+        padding: 8px 10px;
+        border-radius: 4px;
+        margin-top: 10px;
+        line-height: 1.45;
+      }
+
+      .legend {
+        position: fixed;
+        bottom: 14px;
+        left: 14px;
+        background: rgba(8, 22, 38, 0.55);
+        backdrop-filter: blur(8px);
+        border: 1px solid var(--panel-edge);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 11px;
+        color: var(--ink-dim);
+        line-height: 1.55;
+        z-index: 5;
+      }
+      .legend kbd {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 4px;
+        padding: 1px 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 10px;
+        color: var(--ink);
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="stage"></canvas>
+
+    <div class="topbar">
+      <h1 id="title">Marine Life <span class="tag" id="title-tag">slice-wave swim · canvas2d</span></h1>
+      <a class="back" href="https://github.com/boona13/marine-life-js" target="_blank" rel="noopener">source on github →</a>
+    </div>
+
+    <div class="legend">
+      <strong style="color:var(--ink)">Modes</strong><br/>
+      <kbd>1</kbd> wander &nbsp; <kbd>2</kbd> circle &nbsp; <kbd>3</kbd> follow mouse<br/>
+      <kbd>space</kbd> pause/play &nbsp; <kbd>R</kbd> respawn &nbsp; <kbd>D</kbd> debug
+    </div>
+
+    <aside class="panel" id="panel">
+      <h2>Creature</h2>
+      <div class="row" style="grid-template-columns: 1fr;">
+        <label>Pick a creature</label>
+        <select id="creature">
+          <option value="fish">Fish (top-down)</option>
+          <option value="shark">Shark (top-down)</option>
+          <option value="orca">Killer whale (orca)</option>
+          <option value="blueWhale">Blue whale</option>
+        </select>
+      </div>
+
+      <h2>Presets</h2>
+      <div class="preset-row">
+        <button class="btn" data-preset="calm">Calm</button>
+        <button class="btn" data-preset="active">Active</button>
+        <button class="btn" data-preset="frantic">Frantic</button>
+      </div>
+
+      <h2>Body wave</h2>
+      <div class="row">
+        <label>Slices <span class="hint" style="opacity:.5">(N strips along the body)</span></label>
+        <span class="val" id="v-slices">40</span>
+        <input type="range" id="slices" min="6" max="80" step="1" value="40" />
+      </div>
+      <div class="row">
+        <label>Tail amplitude (px)</label>
+        <span class="val" id="v-amp">14</span>
+        <input type="range" id="amp" min="0" max="50" step="0.5" value="14" />
+      </div>
+      <div class="row">
+        <label>Wave frequency (Hz)</label>
+        <span class="val" id="v-freq">2.4</span>
+        <input type="range" id="freq" min="0.2" max="6" step="0.05" value="2.4" />
+      </div>
+      <div class="row">
+        <label>Wavelength (body-lengths)</label>
+        <span class="val" id="v-wl">0.85</span>
+        <input type="range" id="wl" min="0.2" max="2.5" step="0.01" value="0.85" />
+      </div>
+      <div class="row">
+        <label>Head stillness</label>
+        <span class="val" id="v-head">0.22</span>
+        <input type="range" id="head" min="0" max="0.6" step="0.01" value="0.22" />
+      </div>
+      <div class="row">
+        <label>Tail emphasis (curve)</label>
+        <span class="val" id="v-tailExp">1.6</span>
+        <input type="range" id="tailExp" min="0.5" max="4" step="0.05" value="1.6" />
+      </div>
+
+      <h2>Body motion</h2>
+      <div class="row">
+        <label>Lateral sway (px)</label>
+        <span class="val" id="v-sway">3</span>
+        <input type="range" id="sway" min="0" max="12" step="0.1" value="3" />
+      </div>
+      <div class="row">
+        <label>Breathe / scale pulse</label>
+        <span class="val" id="v-breathe">0.015</span>
+        <input type="range" id="breathe" min="0" max="0.08" step="0.001" value="0.015" />
+      </div>
+      <div class="row">
+        <label>Bank into turn (shear)</label>
+        <span class="val" id="v-bank">0.18</span>
+        <input type="range" id="bank" min="0" max="0.6" step="0.01" value="0.18" />
+      </div>
+
+      <h2>Swimming</h2>
+      <div class="row">
+        <label>Forward speed (px/s)</label>
+        <span class="val" id="v-speed">42</span>
+        <input type="range" id="speed" min="0" max="180" step="1" value="42" />
+      </div>
+      <div class="row">
+        <label>Turn rate (rad/s)</label>
+        <span class="val" id="v-turn">1.2</span>
+        <input type="range" id="turn" min="0.1" max="6" step="0.05" value="1.2" />
+      </div>
+      <div class="row">
+        <label>Wave-speed coupling</label>
+        <span class="val" id="v-couple">0.6</span>
+        <input type="range" id="couple" min="0" max="1.5" step="0.01" value="0.6" />
+      </div>
+
+      <h2>Appearance</h2>
+      <div class="row">
+        <label>Fish size (px)</label>
+        <span class="val" id="v-size">120</span>
+        <input type="range" id="size" min="32" max="500" step="1" value="120" />
+      </div>
+      <div class="row">
+        <label>Shadow depth</label>
+        <span class="val" id="v-shadow">0.5</span>
+        <input type="range" id="shadow" min="0" max="1" step="0.01" value="0.5" />
+      </div>
+      <div class="row">
+        <label>Fish count</label>
+        <span class="val" id="v-count">1</span>
+        <input type="range" id="count" min="1" max="24" step="1" value="1" />
+      </div>
+
+      <h2>Scene</h2>
+      <div class="row" style="grid-template-columns: 1fr;">
+        <label>Motion mode</label>
+        <select id="mode">
+          <option value="wander">Wander (random target points)</option>
+          <option value="circle">Circle (smooth loop)</option>
+          <option value="follow">Follow cursor</option>
+          <option value="static">Static (no forward motion)</option>
+        </select>
+      </div>
+      <div class="toggle-row"><label><input type="checkbox" id="trails" /> Motion trail</label></div>
+      <div class="toggle-row"><label><input type="checkbox" id="ripples" checked /> Tail foam</label></div>
+      <div class="toggle-row"><label><input type="checkbox" id="caustics" checked /> Water caustics</label></div>
+      <div class="toggle-row"><label><input type="checkbox" id="debug" /> Debug slice lines</label></div>
+      <div class="toggle-row"><label><input type="checkbox" id="pixelate" /> Pixelated (no smoothing)</label></div>
+
+      <div class="btn-row">
+        <button class="btn" id="btn-pause">Pause</button>
+        <button class="btn warm" id="btn-reset">Respawn</button>
+      </div>
+
+      <div class="note">
+        <strong>How it works:</strong> the top-down image is cut into N horizontal strips. Each strip is drawn at an offset along a traveling sine wave whose amplitude grows from head→tail — pure Canvas2D <code>drawImage</code> calls, no shaders, no spritesheets. The same trick ports 1:1 to a vertex shader on a tessellated quad if you ever want it on the GPU.
+      </div>
+
+      <div class="stat" id="stat">— fps</div>
+    </aside>
+
+    <script>
+    (() => {
+      "use strict";
+
+      // ---------------------------------------------------------------------
+      // Canvas + DPR
+      // ---------------------------------------------------------------------
+      const canvas = document.getElementById("stage");
+      const ctx = canvas.getContext("2d");
+      let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      let W = 0, H = 0;
+      function resize() {
+        dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        W = window.innerWidth;
+        H = window.innerHeight;
+        canvas.width = Math.floor(W * dpr);
+        canvas.height = Math.floor(H * dpr);
+        canvas.style.width = W + "px";
+        canvas.style.height = H + "px";
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      window.addEventListener("resize", resize);
+      resize();
+
+      // ---------------------------------------------------------------------
+      // Controls model
+      // ---------------------------------------------------------------------
+      const P = {
+        slices: 40,
+        amp: 14,
+        freq: 2.4,
+        wl: 0.85,
+        head: 0.22,
+        tailExp: 1.6,
+        sway: 3,
+        breathe: 0.015,
+        bank: 0.18,
+        speed: 42,
+        turn: 1.2,
+        couple: 0.6,
+        size: 120,
+        shadow: 0.5,
+        count: 1,
+        mode: "wander",
+        trails: false,
+        ripples: true,
+        caustics: true,
+        debug: false,
+        pixelate: false,
+        paused: false,
+      };
+
+      // ---------------------------------------------------------------------
+      // Creatures — each entry pairs a sprite with default values + presets
+      // tuned for that body. The slice-wave engine is the same; only the
+      // numbers change. To add whales later: register a new entry here.
+      // ---------------------------------------------------------------------
+      const CREATURES = {
+        fish: {
+          label: "Fish (top-down)",
+          image: "assets/fish-topdown.png",
+          // Defaults applied when this creature is selected
+          defaults: {
+            slices: 40, amp: 14, freq: 2.4, wl: 0.85, head: 0.22, tailExp: 1.6,
+            sway: 3, breathe: 0.015, bank: 0.18, speed: 42, turn: 1.2, couple: 0.6,
+            size: 120, shadow: 0.5,
+          },
+          presets: {
+            calm: {
+              slices: 40, amp: 9, freq: 1.6, wl: 0.95, head: 0.28, tailExp: 1.8,
+              sway: 2, breathe: 0.012, bank: 0.12, speed: 28, turn: 0.9, couple: 0.55,
+            },
+            active: {
+              slices: 40, amp: 14, freq: 2.4, wl: 0.85, head: 0.22, tailExp: 1.6,
+              sway: 3, breathe: 0.015, bank: 0.18, speed: 42, turn: 1.2, couple: 0.6,
+            },
+            frantic: {
+              slices: 50, amp: 22, freq: 4.5, wl: 0.7, head: 0.12, tailExp: 1.3,
+              sway: 5, breathe: 0.025, bank: 0.28, speed: 95, turn: 2.4, couple: 0.85,
+            },
+          },
+        },
+
+        shark: {
+          label: "Shark (top-down)",
+          image: "assets/shark-topdown.png",
+          // Sharks are bigger, slower-cruising, and beat their tail with a
+          // longer wavelength (the wave travels further along their body
+          // before peaking). They turn more deliberately, with a stronger
+          // bank lean when they do. The "frantic" preset captures a hunting
+          // sprint where the tail snaps hard and they cover ground fast.
+          defaults: {
+            slices: 50, amp: 16, freq: 1.4, wl: 1.10, head: 0.30, tailExp: 1.8,
+            sway: 2, breathe: 0.010, bank: 0.22, speed: 32, turn: 0.8, couple: 0.7,
+            size: 200, shadow: 0.7,
+          },
+          presets: {
+            calm: {
+              slices: 50, amp: 10, freq: 0.9, wl: 1.20, head: 0.34, tailExp: 2.0,
+              sway: 1.5, breathe: 0.008, bank: 0.16, speed: 18, turn: 0.6, couple: 0.6,
+            },
+            active: {
+              slices: 50, amp: 16, freq: 1.4, wl: 1.10, head: 0.30, tailExp: 1.8,
+              sway: 2, breathe: 0.010, bank: 0.22, speed: 32, turn: 0.8, couple: 0.7,
+            },
+            frantic: {
+              slices: 60, amp: 26, freq: 2.8, wl: 0.90, head: 0.18, tailExp: 1.5,
+              sway: 3.5, breathe: 0.018, bank: 0.34, speed: 80, turn: 1.6, couple: 0.95,
+            },
+          },
+        },
+
+        orca: {
+          label: "Killer whale (orca)",
+          image: "assets/killer-whale-topdown.png",
+          // Orcas are big, fast, agile predators. They cruise with slow,
+          // powerful tail strokes but can sprint hard when hunting. The
+          // wave travels nearly the full body length (long wavelength),
+          // most of the bend is in the rear third, and the massive head
+          // is essentially locked in place. Slightly more lateral roll
+          // (sway) than a shark because the body is heavier.
+          defaults: {
+            slices: 56, amp: 18, freq: 1.0, wl: 1.25, head: 0.38, tailExp: 2.0,
+            sway: 2.5, breathe: 0.012, bank: 0.24, speed: 36, turn: 0.7, couple: 0.7,
+            size: 260, shadow: 0.8,
+          },
+          presets: {
+            calm: {
+              slices: 56, amp: 11, freq: 0.6, wl: 1.40, head: 0.42, tailExp: 2.2,
+              sway: 1.8, breathe: 0.009, bank: 0.18, speed: 20, turn: 0.5, couple: 0.6,
+            },
+            active: {
+              slices: 56, amp: 18, freq: 1.0, wl: 1.25, head: 0.38, tailExp: 2.0,
+              sway: 2.5, breathe: 0.012, bank: 0.24, speed: 36, turn: 0.7, couple: 0.7,
+            },
+            frantic: {
+              slices: 64, amp: 28, freq: 2.0, wl: 1.05, head: 0.26, tailExp: 1.6,
+              sway: 4, breathe: 0.020, bank: 0.36, speed: 75, turn: 1.4, couple: 0.95,
+            },
+          },
+        },
+
+        blueWhale: {
+          label: "Blue whale",
+          image: "assets/blue-whale-topdown.png",
+          // Blue whales are the largest animals on Earth — they glide.
+          // Tail strokes are extremely slow and the body is so long that
+          // the visible bend looks gentle relative to total length. Head
+          // basically does not move; turns are wide and unhurried. We
+          // crank size way up and add a heavier drop shadow to sell the
+          // mass. "Frantic" for a blue whale is still slow compared to
+          // other creatures here — it's a stress-burst, not a dart.
+          defaults: {
+            slices: 64, amp: 22, freq: 0.55, wl: 1.45, head: 0.44, tailExp: 2.2,
+            sway: 2, breathe: 0.010, bank: 0.18, speed: 22, turn: 0.45, couple: 0.6,
+            size: 340, shadow: 0.85,
+          },
+          presets: {
+            calm: {
+              slices: 64, amp: 13, freq: 0.32, wl: 1.60, head: 0.48, tailExp: 2.4,
+              sway: 1.2, breathe: 0.007, bank: 0.12, speed: 12, turn: 0.30, couple: 0.5,
+            },
+            active: {
+              slices: 64, amp: 22, freq: 0.55, wl: 1.45, head: 0.44, tailExp: 2.2,
+              sway: 2, breathe: 0.010, bank: 0.18, speed: 22, turn: 0.45, couple: 0.6,
+            },
+            frantic: {
+              slices: 72, amp: 34, freq: 1.1, wl: 1.20, head: 0.32, tailExp: 1.8,
+              sway: 3, breathe: 0.016, bank: 0.28, speed: 48, turn: 0.9, couple: 0.85,
+            },
+          },
+        },
+      };
+
+      // Current creature key (mutated when the dropdown changes)
+      let currentCreature = "fish";
+
+      // Backward-compat — older code that referenced PRESETS still works,
+      // but it now resolves to the active creature's preset table.
+      const PRESETS = new Proxy({}, {
+        get(_t, name) { return CREATURES[currentCreature].presets[name]; },
+      });
+
+      function bindRange(id, key, isInt = false) {
+        const el = document.getElementById(id);
+        const lbl = document.getElementById("v-" + id);
+        const apply = () => {
+          P[key] = isInt ? parseInt(el.value, 10) : parseFloat(el.value);
+          lbl.textContent = isInt ? P[key] : (Math.abs(P[key]) < 1 ? P[key].toFixed(3) : P[key].toFixed(2));
+        };
+        el.addEventListener("input", apply);
+        apply();
+        return { el, lbl, apply };
+      }
+      function bindCheckbox(id, key) {
+        const el = document.getElementById(id);
+        el.addEventListener("input", () => { P[key] = el.checked; });
+        P[key] = el.checked;
+      }
+      const sliders = {
+        slices: bindRange("slices", "slices", true),
+        amp: bindRange("amp", "amp"),
+        freq: bindRange("freq", "freq"),
+        wl: bindRange("wl", "wl"),
+        head: bindRange("head", "head"),
+        tailExp: bindRange("tailExp", "tailExp"),
+        sway: bindRange("sway", "sway"),
+        breathe: bindRange("breathe", "breathe"),
+        bank: bindRange("bank", "bank"),
+        speed: bindRange("speed", "speed"),
+        turn: bindRange("turn", "turn"),
+        couple: bindRange("couple", "couple"),
+        size: bindRange("size", "size", true),
+        shadow: bindRange("shadow", "shadow"),
+        count: bindRange("count", "count", true),
+      };
+      bindCheckbox("trails", "trails");
+      bindCheckbox("ripples", "ripples");
+      bindCheckbox("caustics", "caustics");
+      bindCheckbox("debug", "debug");
+      bindCheckbox("pixelate", "pixelate");
+
+      document.getElementById("mode").addEventListener("change", (e) => {
+        P.mode = e.target.value;
+      });
+      document.getElementById("btn-pause").addEventListener("click", () => {
+        P.paused = !P.paused;
+        document.getElementById("btn-pause").textContent = P.paused ? "Play" : "Pause";
+      });
+      document.getElementById("btn-reset").addEventListener("click", () => spawnFish());
+
+      document.querySelectorAll(".preset-row .btn").forEach(b => {
+        b.addEventListener("click", () => applyPreset(b.dataset.preset));
+      });
+      function applyPreset(name) {
+        const p = PRESETS[name]; if (!p) return;
+        for (const k of Object.keys(p)) {
+          P[k] = p[k];
+          if (sliders[k]) {
+            sliders[k].el.value = p[k];
+            sliders[k].apply();
+          }
+        }
+      }
+
+      // ---------------------------------------------------------------------
+      // Mouse
+      // ---------------------------------------------------------------------
+      const mouse = { x: W * 0.5, y: H * 0.5 };
+      window.addEventListener("mousemove", (e) => {
+        mouse.x = e.clientX; mouse.y = e.clientY;
+      });
+
+      // ---------------------------------------------------------------------
+      // Keyboard
+      // ---------------------------------------------------------------------
+      window.addEventListener("keydown", (e) => {
+        if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+        if (e.code === "Space") {
+          e.preventDefault();
+          document.getElementById("btn-pause").click();
+        } else if (e.key === "1") { P.mode = "wander"; document.getElementById("mode").value = "wander"; }
+        else if (e.key === "2") { P.mode = "circle"; document.getElementById("mode").value = "circle"; }
+        else if (e.key === "3") { P.mode = "follow"; document.getElementById("mode").value = "follow"; }
+        else if (e.key.toLowerCase() === "r") { spawnFish(); }
+        else if (e.key.toLowerCase() === "d") {
+          P.debug = !P.debug;
+          document.getElementById("debug").checked = P.debug;
+        }
+      });
+
+      // ---------------------------------------------------------------------
+      // Creature image — single Image object whose .src is swapped when the
+      // user picks a different creature from the dropdown. The renderer
+      // already references this via `fishImg`, so we keep the name as an
+      // alias for backward compatibility.
+      // ---------------------------------------------------------------------
+      const fishImg = new Image();
+      fishImg.crossOrigin = "anonymous";
+      let imgReady = false;
+      let imgAspect = 1;
+
+      function loadCreature(key, opts = {}) {
+        const c = CREATURES[key];
+        if (!c) return;
+        currentCreature = key;
+
+        // Apply this creature's defaults so each one feels right out of the
+        // gate. We push the values to both P and the slider UI.
+        const d = c.defaults || {};
+        for (const k of Object.keys(d)) {
+          P[k] = d[k];
+          if (sliders[k]) {
+            sliders[k].el.value = d[k];
+            sliders[k].apply();
+          }
+        }
+
+        // Update header tag so it's clear which animal is active.
+        const tag = document.getElementById("title-tag");
+        if (tag) tag.textContent = key + " · slice wave";
+
+        imgReady = false;
+        fishImg.onload = () => {
+          imgReady = true;
+          imgAspect = fishImg.naturalWidth / fishImg.naturalHeight;
+          if (!opts.skipSpawn) spawnFish();
+        };
+        fishImg.onerror = () => {
+          console.error(c.label + " image failed to load:", c.image);
+        };
+        fishImg.src = c.image;
+      }
+
+      document.getElementById("creature").addEventListener("change", (e) => {
+        loadCreature(e.target.value);
+      });
+
+      loadCreature("fish");
+
+      // ---------------------------------------------------------------------
+      // Fish entity
+      // ---------------------------------------------------------------------
+      const fishes = [];
+      function spawnFish() {
+        fishes.length = 0;
+        const n = P.count;
+        for (let i = 0; i < n; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          fishes.push({
+            x: W * 0.5 + (Math.random() - 0.5) * Math.min(W, H) * 0.4,
+            y: H * 0.5 + (Math.random() - 0.5) * Math.min(W, H) * 0.4,
+            heading: angle,
+            angularVel: 0,
+            bankShear: 0,
+            wanderAngle: angle,
+            phase: Math.random() * Math.PI * 2,
+            target: { x: W * 0.5, y: H * 0.5 },
+            nextRetarget: 0,
+            trail: [],
+            circleOffset: Math.random() * Math.PI * 2,
+            sizeMul: 0.85 + Math.random() * 0.3,
+            hueShift: (Math.random() - 0.5) * 30,
+          });
+        }
+      }
+
+      // Re-spawn when count changes
+      sliders.count.el.addEventListener("change", spawnFish);
+
+      // ---------------------------------------------------------------------
+      // Caustics — cheap moving multiplicative noise
+      // ---------------------------------------------------------------------
+      const causticsCanvas = document.createElement("canvas");
+      const causticsCtx = causticsCanvas.getContext("2d");
+      function generateCaustics() {
+        const cw = 256, ch = 256;
+        causticsCanvas.width = cw;
+        causticsCanvas.height = ch;
+        const img = causticsCtx.createImageData(cw, ch);
+        for (let y = 0; y < ch; y++) {
+          for (let x = 0; x < cw; x++) {
+            const v = (Math.sin(x * 0.07) + Math.cos(y * 0.09) + Math.sin((x + y) * 0.04)) / 3;
+            const a = Math.max(0, v) * 60;
+            const idx = (y * cw + x) * 4;
+            img.data[idx] = 200;
+            img.data[idx + 1] = 240;
+            img.data[idx + 2] = 255;
+            img.data[idx + 3] = a;
+          }
+        }
+        causticsCtx.putImageData(img, 0, 0);
+      }
+      generateCaustics();
+
+      // ---------------------------------------------------------------------
+      // Foam brush — a soft radial-gradient stamp. Drawn with the "lighter"
+      // composite mode, overlapping stamps blend into bright frothy clumps,
+      // and isolated stamps stay as soft droplets. Far more realistic than
+      // circle ripples for a top-down water wake.
+      // ---------------------------------------------------------------------
+      const foamBrush = (() => {
+        const c = document.createElement("canvas");
+        c.width = c.height = 64;
+        const g = c.getContext("2d");
+        const rad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+        rad.addColorStop(0.00, "rgba(255, 255, 255, 1.00)");
+        rad.addColorStop(0.30, "rgba(240, 250, 255, 0.62)");
+        rad.addColorStop(0.65, "rgba(200, 230, 255, 0.18)");
+        rad.addColorStop(1.00, "rgba(170, 215, 250, 0.00)");
+        g.fillStyle = rad;
+        g.fillRect(0, 0, 64, 64);
+        return c;
+      })();
+
+      // ---------------------------------------------------------------------
+      // Particles — foam droplets with velocity, drag, life, growth, fade
+      // ---------------------------------------------------------------------
+      const particles = [];
+
+      // Burst on each tail flick: a cluster of foam droplets sprayed
+      // backward and to the side the tail just left.
+      function emitFoamBurst(x, y, heading, tailSide, strength) {
+        const backX = -Math.cos(heading);
+        const backY = -Math.sin(heading);
+        // Perpendicular "side" vector (rotate back vector by -90°)
+        const sideX = -backY * tailSide;
+        const sideY =  backX * tailSide;
+
+        // Big-droplet core: the visible kick spray
+        const N = Math.round(10 + strength * 8);
+        for (let i = 0; i < N; i++) {
+          const sBack = 0.5 + Math.random() * 0.9;
+          const sSide = 0.35 + Math.random() * 0.7;
+          const speed = 18 + Math.random() * 36 * strength;
+          const vx = (backX * sBack + sideX * sSide) * speed + (Math.random() - 0.5) * 14;
+          const vy = (backY * sBack + sideY * sSide) * speed + (Math.random() - 0.5) * 14;
+          const ox = (Math.random() - 0.5) * 8;
+          const oy = (Math.random() - 0.5) * 8;
+          const r0 = 1.6 + Math.random() * 3.4;
+          particles.push({
+            kind: "foam",
+            x: x + ox, y: y + oy,
+            vx, vy,
+            r0, r1: r0 * (1.6 + Math.random() * 0.8),
+            life: 0,
+            ttl: 0.5 + Math.random() * 0.9,
+            alphaMul: 0.55 + Math.random() * 0.45,
+          });
+        }
+        // Fine spray: smaller longer-lived specks
+        const M = Math.round(6 + strength * 6);
+        for (let i = 0; i < M; i++) {
+          const vx = backX * (6 + Math.random() * 14) + (Math.random() - 0.5) * 8;
+          const vy = backY * (6 + Math.random() * 14) + (Math.random() - 0.5) * 8;
+          const ox = (Math.random() - 0.5) * 10;
+          const oy = (Math.random() - 0.5) * 10;
+          const r0 = 0.6 + Math.random() * 1.1;
+          particles.push({
+            kind: "foam",
+            x: x + ox, y: y + oy,
+            vx, vy,
+            r0, r1: r0 * (1.1 + Math.random() * 0.5),
+            life: 0,
+            ttl: 1.2 + Math.random() * 1.4,
+            alphaMul: 0.6 + Math.random() * 0.35,
+          });
+        }
+      }
+
+      // Continuous wake trickle: a steady stream of tiny bubbles dripped
+      // behind the fish each frame. Keeps the wake visible between beats.
+      function emitWakeBubble(x, y, heading) {
+        const backX = -Math.cos(heading);
+        const backY = -Math.sin(heading);
+        const ox = (Math.random() - 0.5) * 5;
+        const oy = (Math.random() - 0.5) * 5;
+        const r0 = 0.7 + Math.random() * 1.6;
+        particles.push({
+          kind: "foam",
+          x: x + ox, y: y + oy,
+          vx: backX * (4 + Math.random() * 6) + (Math.random() - 0.5) * 4,
+          vy: backY * (4 + Math.random() * 6) + (Math.random() - 0.5) * 4,
+          r0, r1: r0 * (1.05 + Math.random() * 0.4),
+          life: 0,
+          ttl: 1.6 + Math.random() * 1.4,
+          alphaMul: 0.35 + Math.random() * 0.35,
+        });
+      }
+
+      // ---------------------------------------------------------------------
+      // Helpers
+      // ---------------------------------------------------------------------
+      const TAU = Math.PI * 2;
+      const wrapAngle = (a) => {
+        while (a > Math.PI) a -= TAU;
+        while (a < -Math.PI) a += TAU;
+        return a;
+      };
+      const lerp = (a, b, t) => a + (b - a) * t;
+
+      // ---------------------------------------------------------------------
+      // Per-fish AI (steering)
+      // ---------------------------------------------------------------------
+      function updateFishAI(f, dt, t) {
+        // Pick destination based on mode
+        if (P.mode === "follow") {
+          f.target.x = mouse.x;
+          f.target.y = mouse.y;
+        } else if (P.mode === "circle") {
+          const cx = W * 0.5, cy = H * 0.5;
+          const R = Math.min(W, H) * 0.32;
+          const a = t * 0.25 + f.circleOffset;
+          f.target.x = cx + Math.cos(a) * R;
+          f.target.y = cy + Math.sin(a) * R;
+        } else if (P.mode === "wander") {
+          f.nextRetarget -= dt;
+          const dx = f.target.x - f.x;
+          const dy = f.target.y - f.y;
+          if (f.nextRetarget <= 0 || (dx * dx + dy * dy) < 60 * 60) {
+            const margin = Math.min(W, H) * 0.12;
+            f.target.x = margin + Math.random() * (W - margin * 2);
+            f.target.y = margin + Math.random() * (H - margin * 2);
+            f.nextRetarget = 3 + Math.random() * 4;
+          }
+        } else if (P.mode === "static") {
+          f.target.x = f.x; f.target.y = f.y;
+        }
+
+        // Steering — smooth angular dynamics so the fish accelerates into a
+        // turn and decelerates out of it (no robotic snap, no end-of-turn pop).
+        if (P.mode !== "static") {
+          // Soft edge avoidance: pull the effective target inward when the fish
+          // is close to a wall, instead of an instant velocity flip.
+          const m = 60;
+          let tx = f.target.x, ty = f.target.y;
+          const cx = W * 0.5, cy = H * 0.5;
+          const distL = f.x, distR = W - f.x, distT = f.y, distB = H - f.y;
+          const edgeD = Math.min(distL, distR, distT, distB);
+          if (edgeD < m) {
+            const blend = 1 - edgeD / m;
+            tx = lerp(tx, cx, blend * 0.85);
+            ty = lerp(ty, cy, blend * 0.85);
+          }
+
+          // PD-style heading controller: desired angular vel ∝ heading error,
+          // clamped to the max turn rate. Then ease angular vel toward it.
+          const desired = Math.atan2(ty - f.y, tx - f.x);
+          const headingErr = wrapAngle(desired - f.heading);
+          const kP = 3.0; // rad/s of angular vel per rad of error
+          const maxAngVel = P.turn;
+          const desiredAngVel = clamp(headingErr * kP, -maxAngVel, maxAngVel);
+
+          // Time constant for angular acceleration (smaller = snappier).
+          // This is the single most important knob for "not robotic".
+          const tauAng = 0.35;
+          const aBlend = 1 - Math.exp(-dt / tauAng);
+          f.angularVel += (desiredAngVel - f.angularVel) * aBlend;
+
+          // Integrate heading from smoothed angular velocity
+          f.heading += f.angularVel * dt;
+          f.turnRate = f.angularVel;
+
+          // March forward
+          f.x += Math.cos(f.heading) * P.speed * dt;
+          f.y += Math.sin(f.heading) * P.speed * dt;
+
+          // Hard clamp position as a safety net (edge avoidance does most of the work).
+          const hardM = 8;
+          if (f.x < hardM) f.x = hardM;
+          if (f.x > W - hardM) f.x = W - hardM;
+          if (f.y < hardM) f.y = hardM;
+          if (f.y > H - hardM) f.y = H - hardM;
+        } else {
+          // Static: relax angular velocity to zero smoothly so any in-flight
+          // bank shear unwinds naturally instead of popping.
+          const aBlend = 1 - Math.exp(-dt / 0.4);
+          f.angularVel += (0 - f.angularVel) * aBlend;
+          f.heading += f.angularVel * dt;
+          f.turnRate = f.angularVel;
+        }
+
+        // Smooth the visible bank-shear independently so transient angular-vel
+        // changes can't pop the body. This is the second line of defense
+        // against any end-of-turn glitch.
+        const targetShear = clamp(-(f.turnRate || 0) * P.bank, -0.6, 0.6);
+        const sBlend = 1 - Math.exp(-dt / 0.22);
+        f.bankShear += (targetShear - f.bankShear) * sBlend;
+
+        // Tail-wave phase: coupled to body speed (slow fish beat tail slowly)
+        // and to turning effort (panic-paddle on tight turns), via the slider.
+        const speedFactor = P.mode === "static" ? 0 : Math.min(1, P.speed / 60);
+        const turnFactor = Math.abs(f.turnRate) * P.couple;
+        const phaseSpeed = P.freq * TAU * (0.55 + speedFactor * 0.6 + turnFactor);
+        f.phase += phaseSpeed * dt;
+
+        // Motion trail
+        if (P.trails) {
+          f.trail.push({ x: f.x, y: f.y, age: 0 });
+          if (f.trail.length > 40) f.trail.shift();
+          for (const p of f.trail) p.age += dt;
+        } else if (f.trail.length) {
+          f.trail.length = 0;
+        }
+
+        // Foam emission. The wake is built from two layers:
+        //   1. A burst of droplets on each tail flick (zero-crossing of the
+        //      lateral wave) — this is the rhythmic "kick" spray.
+        //   2. A steady trickle of small wake bubbles every frame while the
+        //      fish is moving — keeps a continuous frothy line behind it.
+        if (P.ripples && P.mode !== "static") {
+          const back = (P.size * f.sizeMul) * 0.5;
+          const tx = f.x - Math.cos(f.heading) * back;
+          const ty = f.y - Math.sin(f.heading) * back;
+
+          const sinP = Math.sin(f.phase);
+          const prev = f.prevSinP || 0;
+          if (sinP * prev <= 0 && Math.abs(sinP - prev) > 0.1) {
+            // Side the tail is leaving = sign of prev (where it just was)
+            const side = prev >= 0 ? 1 : -1;
+            // Strength scales with tail amplitude + forward speed
+            const strength = clamp(
+              0.4 + (P.amp / 30) * 0.7 + (P.speed / 100) * 0.5,
+              0.3, 2.2
+            );
+            emitFoamBurst(tx, ty, f.heading, side, strength);
+          }
+          f.prevSinP = sinP;
+
+          // Continuous trickle — rate proportional to forward speed
+          f.wakeAcc = (f.wakeAcc || 0) + dt * (4 + P.speed * 0.10);
+          while (f.wakeAcc >= 1) {
+            f.wakeAcc -= 1;
+            emitWakeBubble(tx, ty, f.heading);
+          }
+        }
+      }
+
+      // ---------------------------------------------------------------------
+      // Draw a single fish using horizontal-slice traveling-wave deformation
+      // ---------------------------------------------------------------------
+      function drawFish(ctx, f, t) {
+        if (!imgReady) return;
+        const sizeY = P.size * f.sizeMul;
+        const sizeX = sizeY * imgAspect;
+
+        const N = Math.max(2, P.slices | 0);
+        const srcH = fishImg.naturalHeight;
+        const srcW = fishImg.naturalWidth;
+
+        // Lateral sway in fish-local frame
+        const swayX = Math.sin(f.phase * 0.5) * P.sway;
+        // Breathing scale pulse
+        const breathe = 1 + Math.sin(f.phase * 0.5) * P.breathe;
+        // Banking shear: use the smoothed value updated in AI so it can't pop
+        const shear = f.bankShear || 0;
+
+        ctx.save();
+        ctx.translate(f.x, f.y);
+        // Image faces up (head at top, tail at bottom). Heading=0 means moving along +X.
+        // So we need rotation so that "up" of image aligns with heading direction.
+        ctx.rotate(f.heading + Math.PI / 2);
+        ctx.scale(breathe, breathe);
+        // Bank: shear along X (perpendicular to motion) by turn rate
+        if (Math.abs(shear) > 0.001) ctx.transform(1, 0, shear, 1, 0, 0);
+        ctx.translate(swayX, 0);
+
+        // Disable smoothing for pixelated look if requested
+        const prevSmooth = ctx.imageSmoothingEnabled;
+        ctx.imageSmoothingEnabled = !P.pixelate;
+        ctx.imageSmoothingQuality = "high";
+
+        // Soft shadow under the fish (slightly offset, alpha drops with depth)
+        if (P.shadow > 0.001) {
+          ctx.save();
+          ctx.translate(0, sizeY * 0.06);
+          ctx.globalAlpha = P.shadow * 0.45;
+          ctx.filter = "blur(6px)";
+          ctx.drawImage(fishImg, -sizeX / 2, -sizeY / 2, sizeX, sizeY);
+          ctx.filter = "none";
+          ctx.restore();
+        }
+
+        // Slice draw with traveling wave
+        const sliceH = sizeY / N;
+        const srcSliceH = srcH / N;
+        const k = (TAU / Math.max(0.001, P.wl)); // angular wavenumber over body
+        const tailEmphasis = Math.max(0.1, P.tailExp);
+        const headStill = clamp(P.head, 0, 0.95);
+
+        for (let i = 0; i < N; i++) {
+          // u: 0 at head (top of image), 1 at tail (bottom)
+          const u = i / (N - 1);
+          // Body-space along the fish, from head outward, normalized 0..1
+          // Wave amplitude profile: zero up to headStill, then grows by ^tailExp
+          const uEff = clamp((u - headStill) / (1 - headStill), 0, 1);
+          const amp = P.amp * Math.pow(uEff, tailEmphasis);
+          // Traveling wave from head to tail
+          const wave = Math.sin(f.phase - u * k);
+          const dx = amp * wave;
+
+          // Source rect: take this strip from the original image
+          const sy = i * srcSliceH;
+          // Destination rect: shifted left/right by dx
+          const dy = -sizeY / 2 + i * sliceH;
+          // Slight vertical overlap to avoid seams
+          const overlap = 0.5;
+          ctx.drawImage(
+            fishImg,
+            0, Math.max(0, sy - overlap), srcW, Math.min(srcH - Math.max(0, sy - overlap), srcSliceH + overlap * 2),
+            -sizeX / 2 + dx, dy - overlap, sizeX, sliceH + overlap * 2
+          );
+
+          if (P.debug) {
+            ctx.save();
+            ctx.strokeStyle = "rgba(255, 220, 120, 0.5)";
+            ctx.lineWidth = 0.6;
+            ctx.beginPath();
+            ctx.moveTo(-sizeX / 2 + dx, dy);
+            ctx.lineTo(sizeX / 2 + dx, dy);
+            ctx.stroke();
+            ctx.fillStyle = "rgba(255, 220, 120, 0.85)";
+            ctx.beginPath();
+            ctx.arc(dx, dy + sliceH / 2, 1.2, 0, TAU);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+
+        ctx.imageSmoothingEnabled = prevSmooth;
+        ctx.restore();
+
+        // Draw trail (in world space, after restoring)
+        if (P.trails && f.trail.length > 1) {
+          ctx.save();
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.strokeStyle = "rgba(180, 230, 255, 0.35)";
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(f.trail[0].x, f.trail[0].y);
+          for (let i = 1; i < f.trail.length; i++) {
+            const p = f.trail[i];
+            ctx.lineTo(p.x, p.y);
+          }
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+      // ---------------------------------------------------------------------
+      // Frame loop
+      // ---------------------------------------------------------------------
+      let last = performance.now();
+      let t = 0;
+      let fpsAvg = 60;
+      const fpsEl = document.getElementById("stat");
+
+      function frame(now) {
+        const dtRaw = Math.min(0.05, (now - last) / 1000);
+        const dt = P.paused ? 0 : dtRaw;
+        last = now;
+        t += dt;
+
+        // FPS
+        const inst = 1 / Math.max(0.0001, dtRaw);
+        fpsAvg = fpsAvg * 0.92 + inst * 0.08;
+        fpsEl.textContent = `${fpsAvg.toFixed(0)} fps · ${fishes.length} fish · ${P.slices} slices`;
+
+        // Clear with deep water
+        ctx.fillStyle = "#08243f";
+        ctx.fillRect(0, 0, W, H);
+
+        // Vignette gradient for depth
+        const grad = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.1, W / 2, H / 2, Math.max(W, H) * 0.7);
+        grad.addColorStop(0, "rgba(20, 80, 130, 0.4)");
+        grad.addColorStop(1, "rgba(0, 0, 0, 0.55)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        // Caustics
+        if (P.caustics) {
+          ctx.save();
+          ctx.globalCompositeOperation = "screen";
+          ctx.globalAlpha = 0.16;
+          const cw = 256, ch = 256;
+          const ox = (t * 18) % cw;
+          const oy = (t * 11) % ch;
+          for (let x = -cw - ox; x < W + cw; x += cw) {
+            for (let y = -ch - oy; y < H + ch; y += ch) {
+              ctx.drawImage(causticsCanvas, x + ox, y + oy);
+            }
+          }
+          // Second slower layer at different scale
+          ctx.globalAlpha = 0.08;
+          const sc = 1.7;
+          for (let x = -cw * sc; x < W + cw * sc; x += cw * sc) {
+            for (let y = -ch * sc; y < H + ch * sc; y += ch * sc) {
+              ctx.drawImage(causticsCanvas, x - (t * 9) % (cw * sc), y - (t * 6) % (ch * sc), cw * sc, ch * sc);
+            }
+          }
+          ctx.restore();
+        }
+
+        // Update particles: advance life, integrate velocity, apply drag.
+        if (dt > 0) {
+          const drag = Math.exp(-dt * 1.7);
+          for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.life += dt;
+            if (p.life >= p.ttl) {
+              particles.splice(i, 1);
+              continue;
+            }
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.vx *= drag;
+            p.vy *= drag;
+          }
+        }
+
+        // Draw foam beneath the fish using additive blending so overlapping
+        // droplets brighten into proper frothy clumps rather than averaging
+        // out into a muddy disk.
+        if (particles.length) {
+          ctx.save();
+          ctx.globalCompositeOperation = "lighter";
+          for (const p of particles) {
+            const t = p.life / p.ttl;
+            // Fast fade-in (first 8% of life), slow fade-out (rest)
+            const fadeIn = Math.min(1, t * 12);
+            const fadeOut = 1 - t;
+            const a = fadeIn * fadeOut * p.alphaMul;
+            if (a <= 0.002) continue;
+            const r = lerp(p.r0, p.r1, t);
+            ctx.globalAlpha = a;
+            // Brush is 64x64; visible bright disk lies within ~r when stamped
+            // at width 3.2r (lets the soft halo extend a touch beyond the core).
+            const w = r * 3.2;
+            ctx.drawImage(foamBrush, p.x - w * 0.5, p.y - w * 0.5, w, w);
+          }
+          ctx.restore();
+        }
+
+        // Update + draw fish
+        for (const f of fishes) {
+          updateFishAI(f, dt, t);
+        }
+        for (const f of fishes) {
+          drawFish(ctx, f, t);
+        }
+
+        // Center target indicator in follow mode
+        if (P.mode === "follow") {
+          ctx.save();
+          ctx.strokeStyle = "rgba(255, 220, 120, 0.55)";
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(mouse.x, mouse.y, 14, 0, TAU);
+          ctx.moveTo(mouse.x - 18, mouse.y);
+          ctx.lineTo(mouse.x - 6, mouse.y);
+          ctx.moveTo(mouse.x + 6, mouse.y);
+          ctx.lineTo(mouse.x + 18, mouse.y);
+          ctx.moveTo(mouse.x, mouse.y - 18);
+          ctx.lineTo(mouse.x, mouse.y - 6);
+          ctx.moveTo(mouse.x, mouse.y + 6);
+          ctx.lineTo(mouse.x, mouse.y + 18);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    })();
+    </script>
+  </body>
+</html>
