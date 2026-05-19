@@ -353,28 +353,28 @@
       <div class="toggle-row"><label><input type="checkbox" id="ripples" checked /> Foam enabled <span style="opacity:.5">(master toggle)</span></label></div>
       <div class="row">
         <label>Foam amount <span style="opacity:.5">(burst + trickle density)</span></label>
-        <span class="val" id="v-foamAmount">0.75</span>
+        <span class="val" id="v-foamAmount">0.750</span>
         <input type="range" id="foamAmount" min="0" max="3" step="0.05" value="0.75" />
       </div>
       <div class="row">
         <label>Droplet size</label>
-        <span class="val" id="v-foamSize">0.70</span>
-        <input type="range" id="foamSize" min="0.3" max="3" step="0.05" value="0.70" />
+        <span class="val" id="v-foamSize">0.700</span>
+        <input type="range" id="foamSize" min="0.3" max="3" step="0.05" value="0.7" />
       </div>
       <div class="row">
         <label>Foam lifetime <span style="opacity:.5">(how long bubbles linger)</span></label>
-        <span class="val" id="v-foamLife">0.45</span>
+        <span class="val" id="v-foamLife">0.450</span>
         <input type="range" id="foamLife" min="0.3" max="3" step="0.05" value="0.45" />
       </div>
       <div class="row">
         <label>Spray distance <span style="opacity:.5">(initial velocity)</span></label>
-        <span class="val" id="v-foamSpread">0.80</span>
-        <input type="range" id="foamSpread" min="0.2" max="2.5" step="0.05" value="0.80" />
+        <span class="val" id="v-foamSpread">0.800</span>
+        <input type="range" id="foamSpread" min="0.2" max="2.5" step="0.05" value="0.8" />
       </div>
       <div class="row">
         <label>Brightness</label>
-        <span class="val" id="v-foamBright">0.20</span>
-        <input type="range" id="foamBright" min="0" max="2" step="0.05" value="0.20" />
+        <span class="val" id="v-foamBright">0.200</span>
+        <input type="range" id="foamBright" min="0" max="2" step="0.05" value="0.2" />
       </div>
 
       <h2>Scene</h2>
@@ -451,9 +451,9 @@
         trails: false,
         ripples: true,
         // Foam / wake — multipliers on the burst + trickle particle systems.
-        // These tuned defaults give a subtler, shorter-lived wake than the
-        // raw 1.0 multipliers; turn each slider toward 1 to recover the
-        // louder original look, or further toward its max for thick froth.
+        // Defaults are tuned for a subtle, fast-decaying wake (sparse,
+        // small, dim, short-lived). All five live in [0..3]-ish and hit
+        // 1.0 to reproduce the maximalist original look.
         foamAmount: 0.75,  // particle count multiplier (0 = nothing emitted)
         foamSize:   0.70,  // droplet radius multiplier
         foamLife:   0.45,  // particle ttl multiplier (linger time)
@@ -506,7 +506,7 @@
           // sprint where the tail snaps hard and they cover ground fast.
           defaults: {
             slices: 50, amp: 16, freq: 1.4, wl: 1.10, head: 0.30, tailExp: 1.8,
-            sway: 2, breathe: 0.010, bank: 0.22, speed: 32, turn: 0.8, couple: 0.7,
+            sway: 2, breathe: 0.010, bank: 0.22, speed: 121, turn: 0.8, couple: 0.7,
             size: 200, shadow: 0.7,
           },
           presets: {
@@ -516,7 +516,7 @@
             },
             active: {
               slices: 50, amp: 16, freq: 1.4, wl: 1.10, head: 0.30, tailExp: 1.8,
-              sway: 2, breathe: 0.010, bank: 0.22, speed: 32, turn: 0.8, couple: 0.7,
+              sway: 2, breathe: 0.010, bank: 0.22, speed: 121, turn: 0.8, couple: 0.7,
             },
             frantic: {
               slices: 60, amp: 26, freq: 2.8, wl: 0.90, head: 0.18, tailExp: 1.5,
@@ -536,7 +536,7 @@
           // (sway) than a shark because the body is heavier.
           defaults: {
             slices: 56, amp: 18, freq: 1.0, wl: 1.25, head: 0.38, tailExp: 2.0,
-            sway: 2.5, breathe: 0.012, bank: 0.24, speed: 36, turn: 0.7, couple: 0.7,
+            sway: 2.5, breathe: 0.012, bank: 0.24, speed: 121, turn: 0.7, couple: 0.7,
             size: 260, shadow: 0.8,
           },
           presets: {
@@ -546,7 +546,7 @@
             },
             active: {
               slices: 56, amp: 18, freq: 1.0, wl: 1.25, head: 0.38, tailExp: 2.0,
-              sway: 2.5, breathe: 0.012, bank: 0.24, speed: 36, turn: 0.7, couple: 0.7,
+              sway: 2.5, breathe: 0.012, bank: 0.24, speed: 121, turn: 0.7, couple: 0.7,
             },
             frantic: {
               slices: 64, amp: 28, freq: 2.0, wl: 1.05, head: 0.26, tailExp: 1.6,
@@ -567,7 +567,7 @@
           // other creatures here — it's a stress-burst, not a dart.
           defaults: {
             slices: 64, amp: 22, freq: 0.55, wl: 1.45, head: 0.44, tailExp: 2.2,
-            sway: 2, breathe: 0.010, bank: 0.18, speed: 22, turn: 0.45, couple: 0.6,
+            sway: 2, breathe: 0.010, bank: 0.18, speed: 121, turn: 0.45, couple: 0.6,
             size: 340, shadow: 0.85,
           },
           presets: {
@@ -577,7 +577,7 @@
             },
             active: {
               slices: 64, amp: 22, freq: 0.55, wl: 1.45, head: 0.44, tailExp: 2.2,
-              sway: 2, breathe: 0.010, bank: 0.18, speed: 22, turn: 0.45, couple: 0.6,
+              sway: 2, breathe: 0.010, bank: 0.18, speed: 121, turn: 0.45, couple: 0.6,
             },
             frantic: {
               slices: 72, amp: 34, freq: 1.1, wl: 1.20, head: 0.32, tailExp: 1.8,
