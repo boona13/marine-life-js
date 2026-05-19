@@ -4,6 +4,8 @@ A zero-dependency, single-file playground that animates **fish, sharks, orcas
 and blue whales** swimming around an HTML `<canvas>` from a single top-down
 PNG per creature. No spritesheets, no rigs, no shaders — just slice-and-displace.
 
+![Marine Life playground — a school of 20 sharks wandering with foam wakes and water caustics](docs/preview.png)
+
 ## Run it
 
 Plain HTML + CSS + JS. **No build step.** The browser does need to fetch the
