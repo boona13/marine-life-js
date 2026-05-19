@@ -353,28 +353,28 @@
       <div class="toggle-row"><label><input type="checkbox" id="ripples" checked /> Foam enabled <span style="opacity:.5">(master toggle)</span></label></div>
       <div class="row">
         <label>Foam amount <span style="opacity:.5">(burst + trickle density)</span></label>
-        <span class="val" id="v-foamAmount">1.00</span>
-        <input type="range" id="foamAmount" min="0" max="3" step="0.05" value="1" />
+        <span class="val" id="v-foamAmount">0.75</span>
+        <input type="range" id="foamAmount" min="0" max="3" step="0.05" value="0.75" />
       </div>
       <div class="row">
         <label>Droplet size</label>
-        <span class="val" id="v-foamSize">1.00</span>
-        <input type="range" id="foamSize" min="0.3" max="3" step="0.05" value="1" />
+        <span class="val" id="v-foamSize">0.70</span>
+        <input type="range" id="foamSize" min="0.3" max="3" step="0.05" value="0.70" />
       </div>
       <div class="row">
         <label>Foam lifetime <span style="opacity:.5">(how long bubbles linger)</span></label>
-        <span class="val" id="v-foamLife">1.00</span>
-        <input type="range" id="foamLife" min="0.3" max="3" step="0.05" value="1" />
+        <span class="val" id="v-foamLife">0.45</span>
+        <input type="range" id="foamLife" min="0.3" max="3" step="0.05" value="0.45" />
       </div>
       <div class="row">
         <label>Spray distance <span style="opacity:.5">(initial velocity)</span></label>
-        <span class="val" id="v-foamSpread">1.00</span>
-        <input type="range" id="foamSpread" min="0.2" max="2.5" step="0.05" value="1" />
+        <span class="val" id="v-foamSpread">0.80</span>
+        <input type="range" id="foamSpread" min="0.2" max="2.5" step="0.05" value="0.80" />
       </div>
       <div class="row">
         <label>Brightness</label>
-        <span class="val" id="v-foamBright">1.00</span>
-        <input type="range" id="foamBright" min="0" max="2" step="0.05" value="1" />
+        <span class="val" id="v-foamBright">0.20</span>
+        <input type="range" id="foamBright" min="0" max="2" step="0.05" value="0.20" />
       </div>
 
       <h2>Scene</h2>
@@ -451,12 +451,14 @@
         trails: false,
         ripples: true,
         // Foam / wake — multipliers on the burst + trickle particle systems.
-        // Defaults of 1.0 reproduce the original look exactly.
-        foamAmount: 1.0,   // particle count multiplier (0 = nothing emitted)
-        foamSize:   1.0,   // droplet radius multiplier
-        foamLife:   1.0,   // particle ttl multiplier (linger time)
-        foamSpread: 1.0,   // initial velocity multiplier (spray distance)
-        foamBright: 1.0,   // alpha multiplier (visibility)
+        // These tuned defaults give a subtler, shorter-lived wake than the
+        // raw 1.0 multipliers; turn each slider toward 1 to recover the
+        // louder original look, or further toward its max for thick froth.
+        foamAmount: 0.75,  // particle count multiplier (0 = nothing emitted)
+        foamSize:   0.70,  // droplet radius multiplier
+        foamLife:   0.45,  // particle ttl multiplier (linger time)
+        foamSpread: 0.80,  // initial velocity multiplier (spray distance)
+        foamBright: 0.20,  // alpha multiplier (visibility)
         caustics: true,
         debug: false,
         pixelate: false,
